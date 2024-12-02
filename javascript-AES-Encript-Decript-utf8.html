@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8">
+    <title>AES Encryption</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        .left {
+            float: left;
+            width: 50%;
+        }
+
+        .right {
+            float: right;
+            width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="left">
+        <h1>AES Encryption</h1>
+        <div>
+            <button onclick="encrypt()">Encrypt</button>
+        </div>
+        <div>
+            <label for="key">AES Key:</label>
+        </div>
+        <div>
+            <input type="text" id="key">
+        </div>
+        <div>
+            <label for="inputString">Input String:</label>
+        </div>
+        <div>
+            <textarea id="inputString" rows="15" cols="100"></textarea>
+        </div>
+        <div>
+            <label for="Base64String">Base64 String:</label>
+        </div>
+        <div>
+            <textarea id="Base64String" rows="15" cols="100" readonly></textarea>
+        </div>
+        <div>
+            <label for="outputString">Output String:</label>
+        </div>
+        <div>
+            <textarea id="outputString" rows="15" cols="100" readonly></textarea>
+        </div>
+    </div>
+    <div class="right">
+        <h1>AES Decription</h1>
+
+        <div>
+            <button onclick="decrypt()">Decript</button>
+        </div>
+        <div>
+            <label for="aesKey">AES Key:</label>
+        </div>
+        <input type="text" id="aesKey" />
+
+        <div>
+            <label for="hexInput">Input String::</label>
+        </div>
+        <div>
+            <textarea id="hexInput" rows="15" cols="100"></textarea>
+        </div>
+        <div>
+            <label for="Base64String">Base64 String:</label>
+        </div>
+        <div>
+            <textarea id="Base64Str" rows="15" cols="100" readonly></textarea>
+        </div>
+        <div>
+            <label for="outputString">Output String:</label>
+        </div>
+        <div>
+            <textarea id="result" rows="15" cols="100" readonly></textarea>
+        </div>
+
+    </div>
+</body>
+<script>
+    function stringToBig5Bytes(str) {
+        const encoder = new TextEncoder("big5");
+        return encoder.encode(str);
+    }
+
+    function stringToUTF8Bytes(str) {
+        const encoder = new TextEncoder("utf-8");
+        //const encoder = new TextEncoder("utf-16");
+        return encoder.encode(str);
+    }
+
+    function encrypt() {
+        var key = document.getElementById("key").value;
+        var inputString = document.getElementById("inputString").value;
+
+        if (!key || !inputString) {
+            alert("Please enter both the AES key and the input string.");
+            return;
+        }
+
+        try {
+            // Convert key and inputString to UTF8 encoded bytes
+            var keyBytes = stringToUTF8Bytes(key);
+            var inputBytes = stringToUTF8Bytes(inputString);
+
+            console.log(keyBytes);
+            console.log(inputBytes);
+
+            // Create a WordArray from the key bytes for CryptoJS
+            var keyWordArray = CryptoJS.lib.WordArray.create(keyBytes);
+            var inputWordArray = CryptoJS.lib.WordArray.create(inputBytes);
+
+            console.log(keyWordArray);
+            console.log(inputWordArray);
+
+            // Encrypt using AES with ECB mode and PKCS7 padding
+            var encrypted = CryptoJS.AES.encrypt(inputWordArray, keyWordArray, {
+                mode: CryptoJS.mode.ECB,
+                padding: CryptoJS.pad.Pkcs7
+            });
+
+            // Convert to base64 string                
+            var encryptedBase64 = encrypted.toString();
+            console.log(encryptedBase64);
+
+            // Display the Base64String
+            document.getElementById("Base64String").value = encryptedBase64;
+
+            // Convert base64 to bytes
+            //var encryptedBytes = CryptoJS.enc.Utf16.parse(encryptedBase64);
+            const encryptedBytes = CryptoJS.enc.Utf8.parse(encryptedBase64);
+            console.log(encryptedBytes);
+
+            // Convert bytes to hex                
+            let encryptedHex = encryptedBytes.toString(CryptoJS.enc.Hex);
+
+            //這邊非常特別，若是用Utf16轉成BYTES，再轉成HEX後，要將前2個字元放到字串的最後面
+            //若是使用utf-8不用再轉了
+            //var encryptedHex_head_tail = encryptedHex.substring(0, 2);
+            //encryptedHex = encryptedHex.substring(2, encryptedHex.length) + encryptedHex_head_tail;
+
+            // Display the result
+            document.getElementById("outputString").value = encryptedHex;
+
+        } catch (error) {
+            alert("Encryption failed: " + error.message);
+        }
+    }
+</script>
+
+<script>
+    function hexToBytes(hex) {
+        let bytes = [];
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes.push(parseInt(hex.substr(i, 2), 16));
+        }
+        return bytes;
+    }
+
+    function bytesToBase64(bytes) {
+        const decryptedHexString = new TextDecoder("utf-8").decode(new Uint8Array(bytes));
+        return decryptedHexString;
+    }
+
+    function decrypt() {
+        // get input
+        const aesKey = document.getElementById("aesKey").value;
+        const hexInput = document.getElementById("hexInput").value;
+
+        // Convert HEX to bytesArray
+        const hexBytesArray = hexToBytes(hexInput);
+
+        // Convert bytesArray to base64String
+        const base64String = bytesToBase64(hexBytesArray);
+
+        console.log(base64String);
+
+        // print base64String
+        document.getElementById("Base64Str").value = base64String;
+
+        // AES Decription
+        const keyBytes = CryptoJS.enc.Utf8.parse(aesKey);
+        const decrypted = CryptoJS.AES.decrypt(base64String, keyBytes, {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        });
+
+        // Decription result to utf-8 format
+        const decryptedBytes = decrypted.toString(CryptoJS.enc.Latin1);
+        console.log(decryptedBytes);
+        const rawData = new TextDecoder('utf-8').decode(new Uint8Array(decryptedBytes.split('').map(char => char.charCodeAt(0))));
+
+        // 顯示結果
+        document.getElementById("result").value = rawData;
+    }
+</script>
+
+</html>
