@@ -182,14 +182,14 @@
         // print base64String
         document.getElementById("Base64Str").value = base64String;
 
-        // AES Decription
+        // AES Decryption
         const keyBytes = CryptoJS.enc.Utf8.parse(aesKey);
         const decrypted = CryptoJS.AES.decrypt(base64String, keyBytes, {
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.Pkcs7
         });
 
-        // Decription result to utf-8 format
+        // Decryption result to utf-8 format
         const decryptedBytes = decrypted.toString(CryptoJS.enc.Latin1);
         console.log(decryptedBytes);
         const rawData = new TextDecoder('utf-8').decode(new Uint8Array(decryptedBytes.split('').map(char => char.charCodeAt(0))));
